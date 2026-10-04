@@ -26,7 +26,7 @@ from moecore.observability import CognitiveMonitor  # noqa: E402
 def build_pool() -> Orchestrator:
     orch = Orchestrator(monitor=CognitiveMonitor())
 
-    # ---- 1. 记忆专家（Addenda-Memory）----
+    # ---- 1. 记忆专家（PPBExt-Memory）----
     mem_state = {"store": None, "ctl": None}
     try:
         from memorycore import MemoryController, MemoryPage, MemoryStore, PageKind
@@ -49,7 +49,7 @@ def build_pool() -> Orchestrator:
     except ImportError as e:
         print("记忆专家未接入:", e)
 
-    # ---- 2. 采样专家（Addenda-Think 的早停投票）----
+    # ---- 2. 采样专家（PPBExt-Sample 的早停投票）----
     def sample_handler(task):
         """多路采样 + 票型早停（离线模拟：给定候选键，投票到收敛）。"""
         keys = task.get("vote_keys", [])
@@ -76,7 +76,7 @@ def build_pool() -> Orchestrator:
                    cost_tier=1, deterministic=True),
         verify_handler, "程序判定器（数值验证）"))
 
-    # ---- 4. 缓存专家（Addenda-Cache 的前缀编排）----
+    # ---- 4. 缓存专家（PPBExt-Cache 的前缀编排）----
     def cache_handler(task):
         try:
             from cachecortex.prefix_bank import PrefixBank
@@ -93,7 +93,7 @@ def build_pool() -> Orchestrator:
                    cost_tier=1, deterministic=True),
         cache_handler, "三区会话前缀编排"))
 
-    # ---- 5. 知识专家（Addenda-LM 的内容门）----
+    # ---- 5. 知识专家（PPBExt-Knowledge 的内容门）----
     def knowledge_handler(task):
         if task.get("op") == "gate":
             try:
@@ -114,7 +114,7 @@ def build_pool() -> Orchestrator:
 
 def main() -> None:
     print("=" * 72)
-    print("Addenda-MoE 编排接线 demo：五专家注册 + 复合任务端到端")
+    print("PPB-MoE 编排接线 demo：五专家注册 + 复合任务端到端")
     print("=" * 72)
     orch = build_pool()
     print(f"\n已注册 {len(orch.adapters)} 个专家: {list(orch.adapters)}")

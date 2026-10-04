@@ -5,5 +5,5 @@
 
 ## [0.1.0] - 2026-10-04
 
-- 拆分自 Addenda-Decide：moecore 四模块（registry/orchestrator/governance/observability）+ 五外挂接线 demo + 粒度审计（二分结论）+ 26 测试
+- 拆分自 PPBDec-Core：moecore 四模块（registry/orchestrator/governance/observability）+ 五外挂接线 demo + 粒度审计（二分结论）+ 26 测试
 

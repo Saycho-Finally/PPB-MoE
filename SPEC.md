@@ -1,12 +1,12 @@
-# Addenda-MoE Spec v0.1（2026-10-04）
+# PPB-MoE Spec v0.1（2026-10-04）
 
 > 定位：应用层稀疏 MoE 的编排层——专家注册、路由执行、治理与观测。
-> 拆分自 Addenda-Decide（决策层保留 DecisionCore；MoE 层独立成此仓库）。
+> 拆分自 PPBDec-Core（决策层保留 DecisionCore；MoE 层独立成此仓库）。
 
 ## 一、拆分依据
 
 原 DecisionCore 包含两层职责：
-- **决策层**（DecisionPoint 类型学 / 判定器光谱 / 审计）→ 留 Addenda-Decide
+- **决策层**（DecisionPoint 类型学 / 判定器光谱 / 审计）→ 留 PPBDec-Core
 - **编排层**（专家池 / 路由运行时 / 治理 / 观测）→ 本仓库
 
 拆分接口：Decide 的 route 决策需要专家池——通过 `moecore.registry` 可选依赖

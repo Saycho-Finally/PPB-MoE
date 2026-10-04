@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "如果本仓库的工作对您的研究有帮助，请按以下格式引用。"
-title: "Addenda-MoE：应用层稀疏 MoE 编排：专家注册、bias 路由、观测回灌与治理预检（五外挂接线实测）"
+title: "PPB-MoE：应用层稀疏 MoE 编排：专家注册、bias 路由、观测回灌与治理预检（五外挂接线实测）"
 authors:
   - family-names: "Saycho-Finally"
     alias: "Saycho-Finally"
@@ -9,5 +9,5 @@ date-released: "2026-10-04"
 license: MIT
 abstract: >-
   应用层稀疏 MoE 编排：专家注册、bias 路由、观测回灌与治理预检（五外挂接线实测）
-repository-code: "https://github.com/Saycho-Finally/Addenda-MoE"
+repository-code: "https://github.com/Saycho-Finally/PPB-MoE"
 type: software

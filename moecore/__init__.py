@@ -1,4 +1,4 @@
-"""Addenda-MoE：应用层稀疏 MoE 的编排层（专家池 / 运行时 / 治理 / 观测）。"""
+"""PPB-MoE：应用层稀疏 MoE 的编排层（专家池 / 运行时 / 治理 / 观测）。"""
 
 from moecore.registry import ExpertRegistry, ExpertSpec, RouteDecision
 from moecore.orchestrator import ExpertAdapter, Orchestrator, OrchestrationRecord

@@ -1,0 +1,35 @@
+{
+  "coupling": {
+    "sampler -> verifier.majority_vote": 1,
+    "early_stop 在采样循环内": 0,
+    "budget_guard -> 采样": 0,
+    "budget_guard 独立使用": 1
+  },
+  "reuse": {
+    "budget_guard": 2,
+    "早期投票/采样": 8
+  },
+  "split_scenarios": {
+    "单体（三合一）": {
+      "experts": 1,
+      "capabilities": 3,
+      "prefix_blocks": 1
+    },
+    "二分（采样+早停 | 预算守卫）": {
+      "experts": 2,
+      "capabilities": 4,
+      "prefix_blocks": 2
+    },
+    "三分（采样 | 早停 | 预算守卫）": {
+      "experts": 3,
+      "capabilities": 5,
+      "prefix_blocks": 3
+    }
+  },
+  "sharpness": {
+    "单体（三合一）": 0.33,
+    "二分（采样+早停 | 预算守卫）": 0.5,
+    "三分（采样 | 早停 | 预算守卫）": 0.6
+  },
+  "recommendation": "二分：采样+早停合并 / 预算守卫独立"
+}

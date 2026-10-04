@@ -37,3 +37,22 @@
 - 不做组件级首创声明（能力路由/负载均衡/gating 均有 MoE 文献先例）
 - 增量是**应用层接线**：把 MoE 的路由纪律落到 LLM 应用外挂（prompt/API 级）
 - 所有结论带静态统计或实测口径
+
+
+## 五、治理层的学术依据（2026-10-04 检索对齐）
+
+**Harness Continual Learning（HCL）** 框架（arXiv）提出 **harness-level forgetting**：
+外部组件（prompts / tools / memories / routing）的更新会破坏既有可靠行为，**即使基座
+模型冻结**。其四组件（Task Interface / Experience Memory / **Capability Map** /
+**Adaptive Router**）与本仓库的治理层 + 专家池 + 编排运行时对应；其
+**Guarded Evolution Protocol**（提议 → 评估 → 提交：候选配置须通过"当前性能提升 +
+历史行为保持 + 功能有效性"三验收）与本仓库的对应关系：
+
+| HCL 概念 | 本仓库实现 |
+|---|---|
+| Capability Map | `ExpertRegistry`（能力契约） |
+| Adaptive Router | `Orchestrator.route`（bias 调整） |
+| 提议-评估-提交 | `Governance.can_load` 预检 + `rebalance` 观测回灌 |
+| 历史行为保持 | `CognitiveMonitor`（工具错误率/循环/路由健康）|
+
+**声明**：HCL 为他人工作，本仓库不主张其概念的原创性；此处为应用层的独立实现与映射。

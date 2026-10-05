@@ -106,9 +106,13 @@ class Orchestrator:
                                   alternatives=rd.alternatives)
         self.records.append(rec)
         self.monitor.record_tool_call(rd.expert, ok=result["ok"])
+        # 静默失败检测：报成功但产出不可用（与显式失败区分记账）
+        silent = self.monitor.record_output(rd.expert, result["ok"],
+                                           result.get("output"), payload)
         self.monitor.record_route(self.registry.snapshot())
         return {"ok": result["ok"], "expert": rd.expert, "route": rd.__dict__,
-                "output": result.get("output"), "error": result.get("error")}
+                "output": result.get("output"), "error": result.get("error"),
+                "silent_failure": silent.kind if silent else None}
 
     # ---- 观测回灌（auxiliary-loss-free 的运行时版）----
 

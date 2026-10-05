@@ -5,6 +5,24 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-05
+
+### Added
+
+- **静默失败检测**（认知可观测性的第五个维度）：区分"调用报成功但产出实际不可用"
+  与显式失败。四类确定性规则——空产出 / 只有说明字段 / 含占位标记 / 产出等于输入
+- `detect_silent_failure()` 与 `SilentFailure`；`CognitiveMonitor.record_output()`
+  记账并累计 `outputs_total` / `silent_rate`；健康分档纳入静默率
+- 编排执行结果新增 `silent_failure` 字段；演示脚本展示每个子任务的静默失败标记
+- `tests/test_silent_failure.py`：22 项测试
+
+### Fixed
+
+- 演示脚本的缓存专家导入了一个**不存在的符号**（`PrefixBank`），
+  被宽泛的 `except` 吞掉后降级为"纪律就位"的说明性输出——即一个真实的静默失败。
+  修正为 `PrefixBankSession`，并改为离线验证前缀**字节稳定性**
+  （同配置两会话的 prefix 与 log 指纹一致），不再降级
+
 ## [0.2.0] - 2026-10-05
 
 ### Added

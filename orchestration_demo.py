@@ -84,15 +84,34 @@ def build_pool() -> Orchestrator:
 
     # ---- 4. 缓存专家：三区会话前缀编排 ----
     def cache_handler(task):
+        """离线验证前缀纪律：同配置的两个会话，prefix 与 log 指纹必须一致。
+
+        缓存杀手是序列化不确定性，所以这里检的是**字节稳定性**而非命中率
+        （命中率需要真实 provider，靠离线桩测不出来）。
+        """
         try:
-            from cachecortex.prefix_bank import PrefixBank
-            pb = PrefixBank(system_prompt="[系统] 你是助手。")
-            for t in task.get("turns", []):
-                pb.append_user(t)
-            return {"prefix_blocks": 1, "turns": len(task.get("turns", []))}
-        except Exception:
-            # 组件不可用时的降级：报告编排纪律而非执行
-            return {"orchestrated": True, "note": "prefix append-only 纪律就位"}
+            from cachecortex.prefix_bank import PrefixBankSession
+
+            class _StubAdapter:                 # 离线演示：不真的调模型
+                name = "stub"
+
+                def generate(self, req):
+                    raise NotImplementedError("离线演示不调用模型")
+
+            system = "[系统] 你是助手。"
+            a = PrefixBankSession(_StubAdapter(), [system])
+            b = PrefixBankSession(_StubAdapter(), [system])
+            for turn in task.get("turns", []):
+                a.log.append({"role": "user", "content": turn})
+                b.log.append({"role": "user", "content": turn})
+            stab = a.validate_stability(b)
+            return {"prefix_stable": stab["prefix_stable"],
+                    "log_stable": stab["log_stable"],
+                    "prefix_fp": stab["prefix_fp"]}
+        except Exception as e:                  # noqa: BLE001
+            # 组件不可用时降级：说明纪律就位但未实际验证（会被静默失败检测标记）
+            return {"orchestrated": True,
+                    "note": f"组件不可用（{type(e).__name__}），纪律就位"}
 
     orch.register(ExpertAdapter(
         ExpertSpec(name="cache", capabilities={"prefix_orchestration"},
@@ -139,8 +158,11 @@ def main() -> None:
     for name, cap, payload in subtasks:
         r = orch.execute(name, cap, payload)
         status = "OK " if r["ok"] else "FAIL"
+        flag = ""
+        if r.get("silent_failure"):
+            flag = f"  [静默失败: {r['silent_failure']}]"
         print(f"  [{status}] {name:16s} → {r.get('expert') or '（无）':10s} "
-              f"{str(r.get('output'))[:60]}")
+              f"{str(r.get('output'))[:48]}{flag}")
 
     # ---- 观测回灌 ----
     print("\n--- 观测回灌（利用率 → bias）---")
@@ -154,6 +176,9 @@ def main() -> None:
     print("\n--- 运行健康 ---")
     for k in ("n_experts", "n_tasks", "success_rate", "route_entropy", "starved", "bias"):
         print(f"  {k}: {h[k]}")
+    mon = h["monitor"]
+    print(f"  outputs={mon['outputs_total']}  silent_rate={mon['silent_rate']}  "
+          f"silent={[a['kind'] for a in mon['silent_failures']]}")
 
 
 if __name__ == "__main__":

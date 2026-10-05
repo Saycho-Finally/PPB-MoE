@@ -3,7 +3,7 @@
     "sampler -> verifier.majority_vote": 1,
     "early_stop 在采样循环内": 0,
     "budget_guard -> 采样": 0,
-    "budget_guard 独立使用": null
+    "budget_guard 独立使用": 1
   },
   "reuse": {
     "budget_guard": 1,

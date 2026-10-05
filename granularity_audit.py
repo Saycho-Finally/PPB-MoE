@@ -109,15 +109,17 @@ def count_reuse():
                         continue
                     hit = sum(1 for k in keys if k in src)
                     if hit and os.path.basename(p) not in (
-                            "budget_guard.py", "selfconsist.py", "verifier.py"):
+                            "budget_guard.py", "selfconsist.py", "verifier.py",
+                            # 模块自身的包导出与自检不算外部引用
+                            "__init__.py", "budget_guard_check.py"):
                         n += 1
                         files.append(os.path.basename(p))
         counts[label] = {"n_files": n, "files": files[:6]}
-    check("预算守卫至少 1 个独立消费方",
+    check("预算守卫至少 1 个外部引用",
           counts["budget_guard"]["n_files"] >= 1,
           f"实测 {counts['budget_guard']['n_files']} 文件: "
-          f"{counts['budget_guard']['files']}（注：此前记忆中3+场景复用含"
-          "结论被应用的误记，静态统计为准）")
+          f"{counts['budget_guard']['files']}（注：已排除模块自身的包导出与自检；"
+          "早期记录的 3+ 场景复用含结论被应用的误记，以静态统计为准）")
     check("采样 API 是高频组件（消费方 >=5）",
           counts["早期投票/采样"]["n_files"] >= 5,
           f"{counts['早期投票/采样']['n_files']} 文件")
@@ -158,11 +160,11 @@ def main() -> None:
     print("审计结论")
     print("=" * 72)
     print("""
-推荐粒度：**二分**（采样+早停 保持合并 | 预算守卫 待封装后独立）
+推荐粒度：**二分**（采样+早停 保持合并 | 预算守卫 独立）
 依据（全部为静态统计实测，按当前目录树重测）：
   1. 耦合度：采样-投票强耦合（selfconsist 依赖 majority_vote）；
-     预算守卫尚无独立模块，其依赖面无从判定
-  2. 复用性：预算守卫 1 个独立消费方（cot_compression_offline），采样 API 6 个文件
+     预算守卫零依赖（已独立成模块，不引用其他 scaffold 模块）
+  2. 复用性：预算守卫 1 个外部引用（压缩实验里的策略基线），采样 API 6 个文件
      （注：早期记录为 2 与 8，系目录整合前的口径；本脚本按当前目录树重测，以本次为准）
   3. 拆分代价：三分锐利度最高（0.60）但专家数/前缀块 ×3；二分边际代价小
      （+1 专家）而收益集中
@@ -170,8 +172,9 @@ def main() -> None:
 附带发现（影响拆分路线）：
   - **早停当前未模块化**（内联在 e1_formal 实验循环）——若要作为专家注册，
     需先抽成 scaffold 模块（工作量小，一次重构）
-  - **预算守卫同样未模块化**——当前只作为压缩实验中的策略名与 effort 到预算的映射
-    出现；上文的"独立"指**先封装再独立**，并非已在独立形态
+  - 预算守卫已封装为 scaffold 模块（档位配置 + finish_reason 反馈环 + thinking
+    开关 + 下限保护）。其"独立"目前属**前瞻性封装**：既有实现已收敛为模块，
+    但按静态统计其外部引用尚只有一处，独立价值有待后续消费方建立
   - 采样 API 是高频组件（6 文件消费）——采样专家应保留宽能力面而非拆窄
 """)
     n_pass = sum(1 for x in RESULTS if x[1] == "PASS")

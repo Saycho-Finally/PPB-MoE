@@ -27,19 +27,19 @@
 
 ## 三、接口契约
 
-本仓库对外提供的能力与消费方式：
+本仓库对外提供的能力与消费方式。本仓库贯通多层，因此按设计需要引用各层的实现仓库：
 
-| 能力 | 提供者 | 消费方式 |
+| 能力 | 提供方（仓库） | 消费方式 |
 |---|---|---|
-| knowledge_gate | 知识注入组件 | 规则门 |
-| prefix_orchestration | 缓存组件 | 三区前缀编排 |
-| solve / compute | 采样组件 | 采样器 + 投票早停 |
-| verify / judge | 决策子层 | 判定器 |
-| remember / recall | 记忆组件 | 存储 + 折叠 |
-| 修复链 | 修复组件 | 四 pass 流水线 |
+| knowledge_gate | [PPBExt-Knowledge](https://github.com/Saycho-Finally/PPBExt-Knowledge) | 规则门 |
+| prefix_orchestration | [PPBExt-Cache](https://github.com/Saycho-Finally/PPBExt-Cache) | 三区前缀编排 |
+| solve / compute | [PPBExt-Sample](https://github.com/Saycho-Finally/PPBExt-Sample) | 采样器 + 投票早停 |
+| remember / recall | [PPBExt-Memory](https://github.com/Saycho-Finally/PPBExt-Memory) | 存储 + 折叠 |
+| 修复链 | [PPBExt-Repair](https://github.com/Saycho-Finally/PPBExt-Repair) | 四 pass 流水线 |
+| verify / judge | [PPBDec-Core](https://github.com/Saycho-Finally/PPBDec-Core) | 判定器 |
 
-接线方式为 `ExpertAdapter`（能力契约 + 执行入口）。组件缺失时该专家跳过注册，
-其余部分照常运行。
+接线方式为 `ExpertAdapter`（能力契约 + 执行入口）。上述仓库不是硬依赖，
+而是运行时可选接入：组件缺失时该专家跳过注册，其余部分照常运行。
 
 ## 四、红线
 

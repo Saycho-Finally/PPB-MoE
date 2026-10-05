@@ -18,6 +18,27 @@
 | `moecore.governance` | 装载前预检：互斥资源冲突 / 缺依赖 / 版本；`touches` 权限声明 |
 | `moecore.observability` | token 速率预警 / 循环耗尽 / 工具错误率 / 路由健康 |
 
+## 与其他仓库的关系
+
+本仓库贯通**治理 / 编排 / 基础设施**三层，是这套系统里横跨多层的仓库，
+因此会引用各层实现所在的仓库。专家池中的每项能力由对应仓库提供：
+
+| 能力 | 提供方（仓库） | 所在层 |
+|---|---|---|
+| 知识注入（内容门 / 技能路由） | [PPBExt-Knowledge](https://github.com/Saycho-Finally/PPBExt-Knowledge) | 组件 |
+| 前缀缓存（三区纪律 / 分层判别） | [PPBExt-Cache](https://github.com/Saycho-Finally/PPBExt-Cache) | 组件 |
+| 采样（多路采样 / 早停 / 预算守卫） | [PPBExt-Sample](https://github.com/Saycho-Finally/PPBExt-Sample) | 组件 |
+| 记忆（分页 / 折叠 / 审计） | [PPBExt-Memory](https://github.com/Saycho-Finally/PPBExt-Memory) | 组件 |
+| 修复（四 pass 流水线） | [PPBExt-Repair](https://github.com/Saycho-Finally/PPBExt-Repair) | 组件 |
+| 决策核（类型学 / 判定器光谱 / 证据链） | [PPBDec-Core](https://github.com/Saycho-Finally/PPBDec-Core) | 决策 |
+
+数据流向：任务由本仓库路由到组件层的专家；需要判定时消费决策层的能力；
+治理与观测由本仓库自带，不下沉到组件层。
+
+接线方式为 `ExpertAdapter`（能力契约 + 执行入口）。上述仓库不是本仓库的硬依赖，
+而是**运行时可选接入**：组件不可用时该专家跳过注册，其余部分照常运行
+（`orchestration_demo.py` 可离线验证这一降级行为）。
+
 ## 运行时闭环
 
 ```
@@ -33,7 +54,7 @@
   无覆盖能力清晰返回 no expert（不静默降级）
 - 过载专家降权 1.0 → 0.95；bias 改变路由结果（bias 2.0 的低频专家战胜 4 倍成本对手）
 - 5 专家均匀分布时路由熵达理论最大 log2(5) = 2.32
-- 组件粒度审计结论：**二分**（采样+早停合并 / 预算守卫待封装后独立），
+- 组件粒度审计结论：**二分**（采样+早停合并 / 预算守卫独立），
   依据为耦合度 / 复用性 / 拆分代价的三维静态统计（6/6 检查项）
 
 完整口径与复现路径见 [MOE_ROADMAP.md](MOE_ROADMAP.md) 与 [reports/](reports/)。

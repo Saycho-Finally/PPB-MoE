@@ -1,4 +1,4 @@
-"""编排运行时测试：ExpertPool 接线 / bias 回灌 / 观测联动 / 无覆盖处理。"""
+"""编排运行时测试：专家池接线 / bias 回灌 / 观测联动 / 无覆盖处理。"""
 
 import os
 import sys
@@ -103,7 +103,7 @@ def test_health():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("ExpertPool 编排运行时测试")
+    print("专家池编排运行时测试")
     print("=" * 60)
     test_routing()
     test_execute_and_audit()

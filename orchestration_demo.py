@@ -1,22 +1,29 @@
-"""五外挂接线 demo：把 Addenda 五件套注册为专家并端到端跑一个复合任务。
+"""五专家接线 demo：把外部组件注册为专家，端到端跑一个复合任务。
 
 复合任务：用户说"我改用 Svelte 了，帮我把上季度的报表数字核对一下"
   → 记忆专家（记住偏好变化）
-  → 采样专家（核对计算，多路采样+早停）
+  → 采样专家（核对计算，多路采样 + 早停）
   → 判定专家（数值验证）
   → 缓存专家（会话前缀编排）
   → 知识专家（内容门核证）
-全程离线（各专家调用真实组件，不调 API）。
+
+全程离线（各专家调用真实组件，不调 API）；外部组件缺失时该专家跳过注册，
+其余部分照常运行。
 """
 
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.environ.get("ADDENDA_MEMORY_ROOT", "../addenda-memory"))
-sys.path.insert(0, os.environ.get("EXOCORTEX_ROOT", "../exocortex"))
-sys.path.insert(0, os.environ.get("ADDENDA_CACHE_ROOT", "../addenda-cache/cachecortex"))
-sys.path.insert(0, os.environ.get("ADDENDA_LM_EXPERIMENTS", "../addenda-lm/experiments"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.environ.get(
+    "PPB_MEMORY_ROOT", os.path.join("..", "PPBExt-Memory")))
+sys.path.insert(0, os.environ.get(
+    "PPB_SAMPLE_ROOT", os.path.join("..", "PPBExt-Sample")))
+sys.path.insert(0, os.environ.get(
+    "PPB_CACHE_ROOT", os.path.join("..", "PPBExt-Cache")))
+sys.path.insert(0, os.environ.get(
+    "PPB_KNOWLEDGE_EXPERIMENTS",
+    os.path.join("..", "PPBExt-Knowledge", "experiments")))
 
 from moecore.orchestrator import ExpertAdapter, Orchestrator  # noqa: E402
 from moecore.registry import ExpertSpec  # noqa: E402
@@ -26,13 +33,12 @@ from moecore.observability import CognitiveMonitor  # noqa: E402
 def build_pool() -> Orchestrator:
     orch = Orchestrator(monitor=CognitiveMonitor())
 
-    # ---- 1. 记忆专家（PPBExt-Memory）----
+    # ---- 1. 记忆专家：分页记忆（折叠 + 审计）----
     mem_state = {"store": None, "ctl": None}
     try:
-        from memorycore import MemoryController, MemoryPage, MemoryStore, PageKind
-        from moecore import DecisionCore
+        from memorycore import MemoryController, MemoryStore, PageKind
         store = MemoryStore()
-        ctl = MemoryController(store, dc=DecisionCore())
+        ctl = MemoryController(store)
         mem_state["store"], mem_state["ctl"] = store, ctl
 
         def memory_handler(task):
@@ -45,11 +51,11 @@ def build_pool() -> Orchestrator:
         orch.register(ExpertAdapter(
             ExpertSpec(name="memory", capabilities={"remember", "recall"},
                        cost_tier=1, deterministic=True),
-            memory_handler, "分页记忆（折叠+审计）"))
+            memory_handler, "分页记忆（折叠 + 审计）"))
     except ImportError as e:
         print("记忆专家未接入:", e)
 
-    # ---- 2. 采样专家（PPBExt-Sample 的早停投票）----
+    # ---- 2. 采样专家：多路采样 + 票型早停 ----
     def sample_handler(task):
         """多路采样 + 票型早停（离线模拟：给定候选键，投票到收敛）。"""
         keys = task.get("vote_keys", [])
@@ -63,9 +69,9 @@ def build_pool() -> Orchestrator:
     orch.register(ExpertAdapter(
         ExpertSpec(name="sampler", capabilities={"solve", "compute"},
                    cost_tier=2),
-        sample_handler, "多路采样+早停投票"))
+        sample_handler, "多路采样 + 早停投票"))
 
-    # ---- 3. 判定专家（决策核的数值验证）----
+    # ---- 3. 判定专家：程序判定器（数值验证）----
     def verify_handler(task):
         from fractions import Fraction
         a, b = task["value"], task["target"]
@@ -76,7 +82,7 @@ def build_pool() -> Orchestrator:
                    cost_tier=1, deterministic=True),
         verify_handler, "程序判定器（数值验证）"))
 
-    # ---- 4. 缓存专家（PPBExt-Cache 的前缀编排）----
+    # ---- 4. 缓存专家：三区会话前缀编排 ----
     def cache_handler(task):
         try:
             from cachecortex.prefix_bank import PrefixBank
@@ -93,7 +99,7 @@ def build_pool() -> Orchestrator:
                    cost_tier=1, deterministic=True),
         cache_handler, "三区会话前缀编排"))
 
-    # ---- 5. 知识专家（PPBExt-Knowledge 的内容门）----
+    # ---- 5. 知识专家：内容门核证 ----
     def knowledge_handler(task):
         if task.get("op") == "gate":
             try:

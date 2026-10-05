@@ -2,11 +2,11 @@
 
 from moecore.registry import ExpertRegistry, ExpertSpec, RouteDecision
 from moecore.orchestrator import ExpertAdapter, Orchestrator, OrchestrationRecord
-from moecore.governance import AddonManifest, Conflict, Governance
+from moecore.governance import ComponentManifest, Conflict, Governance
 from moecore.observability import CognitiveMonitor, ObservabilityEvent
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["ExpertRegistry", "ExpertSpec", "RouteDecision",
            "ExpertAdapter", "Orchestrator", "OrchestrationRecord",
-           "AddonManifest", "Conflict", "Governance",
+           "ComponentManifest", "Conflict", "Governance",
            "CognitiveMonitor", "ObservabilityEvent", "__version__"]

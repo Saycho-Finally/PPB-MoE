@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from moecore.observability import CognitiveMonitor  # noqa: E402
-from moecore.governance import AddonManifest, Governance  # noqa: E402
+from moecore.governance import ComponentManifest, Governance  # noqa: E402
 
 RESULTS = []
 
@@ -46,31 +46,31 @@ def test_observability():
 def test_governance():
     print("治理层：冲突检测 / 依赖 / 预检")
     g = Governance()
-    m1 = AddonManifest(name="cache", version="0.1", touches={"prefix"},
+    m1 = ComponentManifest(name="cache", version="0.1", touches={"prefix"},
                        exclusive={"history.front"})
-    m2 = AddonManifest(name="memory", version="0.1", touches={"history"},
+    m2 = ComponentManifest(name="memory", version="0.1", touches={"history"},
                        exclusive={"history.front"})     # 与 m1 互斥
-    m3 = AddonManifest(name="think", version="0.1", touches={"output"},
+    m3 = ComponentManifest(name="think", version="0.1", touches={"output"},
                        depends_on={"nonexistent"})       # 缺依赖
 
     c1 = g.register(m1)
-    check("首个外挂无冲突", c1 == [])
+    check("首个组件无冲突", c1 == [])
     c2 = g.register(m2)
     check("互斥资源冲突检出", len(c2) == 1 and c2[0].kind == "exclusive_clash",
           c2[0].detail if c2 else "")
     c3 = g.register(m3)
     check("缺依赖检出", any(c.kind == "missing_dependency" for c in c3))
     report = g.check_all()
-    check("治理报告", report["n_addons"] == 3 and report["n_conflicts"] == 2)
+    check("治理报告", report["n_components"] == 3 and report["n_conflicts"] == 2)
     # 预检不注册
-    m4 = AddonManifest(name="oss", version="0.1", touches={"prefix"},
+    m4 = ComponentManifest(name="oss", version="0.1", touches={"prefix"},
                        exclusive={"history.front"})
     ok, found = g.can_load(m4)
-    check("预检拒绝互斥外挂（不注册）", ok is False and len(found) >= 1 and
+    check("预检拒绝互斥组件（不注册）", ok is False and len(found) >= 1 and
           "oss" not in g.manifests, f"{len(found)} 处冲突")
-    m5 = AddonManifest(name="safe", version="0.1", touches={"output"})
+    m5 = ComponentManifest(name="safe", version="0.1", touches={"output"})
     ok2, found2 = g.can_load(m5)
-    check("预检放行无冲突外挂", ok2 is True and found2 == [])
+    check("预检放行无冲突组件", ok2 is True and found2 == [])
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
-"""ExpertPool 运行时：把五件套注册为可路由专家，端到端编排 + 观测回灌。
+"""专家池运行时：把外部组件注册为可路由专家，端到端编排 + 观测回灌。
 
 从"接口就位"到"运行时接线"的三件事：
-  1. ExpertAdapter：每个外挂一个薄适配器（能力契约 + 执行入口）
-  2. Orchestrator：任务 → 路由（DecisionCoreV2.decide_route）→ 执行 → 审计 + 观测
+  1. ExpertAdapter：每个组件一个薄适配器（能力契约 + 执行入口）
+  2. Orchestrator：任务 → 路由（能力契约匹配 + bias 调整）→ 执行 → 审计 + 观测
   3. 观测回灌：CognitiveMonitor 的利用率 → 路由 bias（auxiliary-loss-free 模式的
      运行时实现：过载专家降权、饿死专家升权，不改任务定义）
 """
@@ -19,7 +19,7 @@ from moecore.observability import CognitiveMonitor
 
 @dataclass
 class ExpertAdapter:
-    """外挂的运行时适配器：能力契约 + 执行函数 + 自述。"""
+    """组件的运行时适配器：能力契约 + 执行函数 + 自述。"""
     spec: ExpertSpec
     handler: Callable[[dict], dict]
     description: str = ""

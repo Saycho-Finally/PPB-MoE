@@ -1,39 +1,42 @@
-# PPB-MoE ｜ 补遗：应用层稀疏 MoE 的编排层
+# PPB-MoE
 
-**一句话**：把 LLM 应用外挂（知识/缓存/采样/记忆/修复）注册为**专家**，用一个统一的
-编排层做路由、执行、审计与负载均衡——**"服务端给能力，客户端做路由"** 的运行时实现。
+**一句话**：把外部组件（知识注入 / 前缀缓存 / 采样 / 记忆 / 修复）注册为**专家**，
+用一个统一的编排层做路由、执行、审计与负载均衡。
 
-> License: MIT ｜ 核心零依赖 ｜ Python ≥3.10
+> 作者：Saycho-Finally（独立研究者） ｜ AI 使用声明见 [AI_DISCLOSURE.md](AI_DISCLOSURE.md) ｜ License: MIT ｜ 核心零依赖 ｜ Python ≥3.10
 
 ---
 
-## 四层架构（本仓库覆盖 ①④ 与 ② 的路由侧）
+## 能做什么
 
-```
-① 治理层     Governance（冲突/权限预检）+ CognitiveMonitor（认知可观测性）
-② 编排层     Orchestrator（路由/执行/审计）+ ExpertRegistry（专家池）
-③ 专家池     知识 / 缓存 / 思考 / 决策 / 记忆（由各外挂仓库提供）
-④ 基础设施   Ledger / 进度落盘 / 预热保活（各外挂仓库自带）
-```
-
-## 核心组件
+本仓库覆盖**治理**与**编排**两层：
 
 | 模块 | 职责 |
 |---|---|
-| `moecore.registry` | ExpertSpec 能力契约 + ExpertRegistry（确定性优先路由 / 路由熵 / 饿死检测）|
-| `moecore.orchestrator` | ExpertAdapter + Orchestrator：**bias 调整路由**（得分 = 1/cost_tier × runtime bias）+ 观测回灌 |
+| `moecore.registry` | ExpertSpec 能力契约 + ExpertRegistry（确定性优先路由 / 路由熵 / 饿死检测） |
+| `moecore.orchestrator` | ExpertAdapter + Orchestrator：bias 调整路由（得分 = 1/cost_tier × runtime bias）+ 观测回灌 |
 | `moecore.governance` | 装载前预检：互斥资源冲突 / 缺依赖 / 版本；`touches` 权限声明 |
 | `moecore.observability` | token 速率预警 / 循环耗尽 / 工具错误率 / 路由健康 |
 
-## 运行时闭环（auxiliary-loss-free balancing 的应用层实现）
+## 运行时闭环
 
 ```
 任务 → 路由（bias 调整）→ 专家执行 → CognitiveMonitor 记账
   → rebalance（过载降 bias / 饿死升 bias）→ 下一轮路由
 ```
 
-实测（14 项测试）：过载专家降权 1.0 → 0.95；bias 改变路由结果（2.0 bias 的
-低频专家战胜 4 倍成本的专家）；5 专家均匀分布时路由熵达理论最大 2.32。
+## 结果
+
+26 项测试全过。可复现的实测点：
+
+- 五专家注册 + 复合任务端到端路由正确（5/6 子任务命中专家）；
+  无覆盖能力清晰返回 no expert（不静默降级）
+- 过载专家降权 1.0 → 0.95；bias 改变路由结果（bias 2.0 的低频专家战胜 4 倍成本对手）
+- 5 专家均匀分布时路由熵达理论最大 log2(5) = 2.32
+- 组件粒度审计结论：**二分**（采样+早停合并 / 预算守卫待封装后独立），
+  依据为耦合度 / 复用性 / 拆分代价的三维静态统计（6/6 检查项）
+
+完整口径与复现路径见 [MOE_ROADMAP.md](MOE_ROADMAP.md) 与 [reports/](reports/)。
 
 ## 快速上手
 
@@ -51,27 +54,35 @@ orch.rebalance()                        # 观测回灌
 print(orch.health())                    # 健康报告
 ```
 
-`orchestration_demo.py` 含五外挂注册的完整端到端示例（离线可跑）。
+`orchestration_demo.py` 含五专家注册的完整端到端示例（离线可跑）。
 
-## 实测与审计
+## 仓库结构
 
-- `MOE_ROADMAP.md`：四层架构路线与缺口状态（7 缺口 6 落地）
-- `granularity_audit.py`：外挂粒度审计——**结论：二分**（采样+早停合并 |
-  预算守卫独立），依据为耦合度/复用性/拆分代价的三维静态统计（6/6 检查项）
-- 全部结论附静态统计口径与诚实标注（含对记忆偏差的纠正）
+```
+moecore/         核心库（registry / orchestrator / governance / observability）
+tests/           26 项测试（治理与可观测性 + 编排运行时）
+results/         组件粒度审计的静态统计输出
+reports/         编排运行时验证报告
+orchestration_demo.py   五专家注册 + 复合任务端到端示例（离线可跑）
+granularity_audit.py    组件粒度审计（三维静态统计）
+SPEC.md          设计文档（层级定位 / 接口契约 / 治理依据）
+MOE_ROADMAP.md   路线与优化计划
+```
 
-## 已知局限
+## 边界
 
 - 路由 bias 的调整步长（0.05）与阈值（50%）是启发式初值，未做大样本调参
-- 观测回灌的闭环目前是"执行后调整"，未做在线学习
-- 治理层的版本校验为占位实现（宿主版本解析由调用方注入）
+- 观测回灌是"执行后调整"，未做在线学习
+- 治理层的宿主版本校验为占位实现（版本解析由调用方注入）
+- 编排 demo 依赖各组件所在仓库的源实现；缺失时对应专家跳过注册，其余部分照常运行
 
 ## 引用的先行者
 
 - MoE 基础模式：DeepSeek-V3（fine-grained + shared experts + auxiliary-loss-free
-  balancing）、GShard/Switch（capacity factor）
-- Agent 级路由：programmer.ie 的 capability-contract 专家与 RouteDecision 置信度设计
-- 治理层对标：DSH 插件冲突检测的工程实践
+  balancing）、GShard / Switch（capacity factor）
+- Agent 级能力路由：capability-contract 专家与 RouteDecision 置信度设计（programmer.ie）
+- 治理层依据：Harness Continual Learning（harness-level forgetting；
+  Guarded Evolution Protocol 的"提议—评估—提交"三验收）
 
 ---
 
